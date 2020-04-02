@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-# WS server example
-
+import sys
 import asyncio
 import websockets
 import json
@@ -9,8 +8,8 @@ import time
 import math
 import random
 
-SENSOR_FREQ = 3
-ALERT_FREQ = 5
+SENSOR_FREQ = int(sys.argv[2])
+ALERT_FREQ = int(sys.argv[3])
 
 CLIENTS = set()
 
@@ -118,7 +117,7 @@ async def respondEvents(websocket, path):
       break
 
 
-start_server = websockets.serve(manageConn, "localhost", 8765)
+start_server = websockets.serve(manageConn, "0.0.0.0", int(sys.argv[1]))
 
 asyncio.get_event_loop().run_until_complete(start_server)
 l = asyncio.get_event_loop()
