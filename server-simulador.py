@@ -93,7 +93,7 @@ async def pushSensor(websocket):
             "type": "sensors_push",
             "data": random_data["parameters"],
             "ts": str(time.time()),
-            "token": "10293848129381038109238019380913",
+            "token": "10293848129381038109238019380911",
         }
         data = json.dumps(data)
         await websocket.send(data)
@@ -116,7 +116,7 @@ async def pushConfig(websocket, path):
                         "model": model,
                         "data": globals()[model],
                         "ts": str(time.time()),
-                        "token": "10293848129381038109238019380913",
+                        "token": "10293848129381038109238019380912",
                     }
 
                     await websocket.send(json.dumps(data))
@@ -180,7 +180,7 @@ async def respondEvents(websocket, path):
                 response = {
                     "id": str(request["id"]),
                     "status": 200,
-                    "token": "asdf",
+                    "token": "10293848129381038109238019380913",
                 }
                 globals()[model] = request["data"]
                 config_versions[0] = time.time()
@@ -191,13 +191,13 @@ async def respondEvents(websocket, path):
                     "status": 300,
                     "model": model,
                     "data": globals()[model],
-                    "token": "aaaaaasdf",
+                    "token": "10293848129381038109238019380914",
                 }
             else:
                 response = {
                     "id": str(request["id"]),
                     "status": -1,
-                    "token": "asdf",
+                    "token": "10293848129381038109238019380915",
                 }
 
             response = json.dumps(response)
