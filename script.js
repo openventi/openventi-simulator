@@ -66,10 +66,18 @@ function processSensor(json) {
 }
 
 function processConfig(json) {
-    parameters = json['data'];
+    console.log(json)
+    data = json['data'];
     showMessage('Parameters pushed', json, 'primary');
-    for (var parameter in parameters) {
-        $('#' + parameter).val(parameters[parameter]);
+    var model = json['model']
+    for (var item in data) {
+        if (model == 'alerts') {
+            var range = data[item]
+            $('#' + item + '_from').val(range[0])
+            $('#' + item + '_to').val(range[1])
+        } else {
+            $('#' + item).val(data[item]);
+        }
     }
 }
 

@@ -37,7 +37,7 @@
                     <div class="form-row align-items-center">
                         <div class="col-auto">
                             <label for="ip" class="sr-only">IP</label>
-                            <input id="ip" type="text" class="form-control mb-2" value="simulador-yubox.openventi.org" placeholder="127.0.0.1">
+                            <input id="ip" type="text" class="form-control mb-2" value="127.0.0.1" placeholder="127.0.0.1">
                         </div>
                         <div class="col-auto">
                             <label for="port" class="sr-only">Port</label>
@@ -261,29 +261,41 @@
                             <div class="card-body">
                                 <form id="form-alerts" model="alerts">
                                     <div class="form-group row">
-                                        <label class="col-sm-6 col-form-label" for="volume">
-                                    Volumen<br>
-                                    <small class="text-monospace">(volume)</small></label>
-                                        <div class="col-sm-6">
-                                            <input type="number" class="form-control" id="volume" name="volume" placeholder="">
+                                        <label class="col-sm-4 col-form-label" for="volume">
+                                            Volumen<br>
+                                            <small class="text-monospace">(volume)</small>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input type="number" class="form-control" id="volume_from" name="volume" placeholder="">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <input type="number" class="form-control" id="volume_to" name="volume" placeholder="">
                                         </div>
                                     </div>
 
                                     <div class="form-group row">
-                                        <label class="col-sm-6 col-form-label" for="presure">
-                                    Presión<br>
-                                    <small class="text-monospace">(presure)</small></label>
-                                        <div class="col-sm-6">
-                                            <input type="number" class="form-control" id="presure" name="presure" placeholder="">
+                                        <label class="col-sm-4 col-form-label" for="presure">
+                                            Presión<br>
+                                            <small class="text-monospace">(presure)</small>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input type="number" class="form-control" id="presure_from" name="presure" placeholder="">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <input type="number" class="form-control" id="presure_to" name="presure" placeholder="">
                                         </div>
                                     </div>
 
                                     <div class="form-group row">
-                                        <label class="col-sm-6 col-form-label" for="flow">
-                                    Flujo<br>
-                                    <small class="text-monospace">(flow)</small></label>
-                                        <div class="col-sm-6">
-                                            <input type="number" class="form-control" id="flow" name="flow" placeholder="">
+                                        <label class="col-sm-4 col-form-label" for="flow">
+                                            Flujo<br>
+                                            <small class="text-monospace">(flow)</small>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <input type="number" class="form-control" id="flow_from" name="flow" placeholder="">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <input type="number" class="form-control" id="flow_to" name="flow" placeholder="">
                                         </div>
                                     </div>
 

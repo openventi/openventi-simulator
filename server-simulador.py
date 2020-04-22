@@ -36,28 +36,31 @@ patient = {
 }
 
 alerts = {
-    "volume": "",
-    "flow": "",
-    "presure": "",
+    "volume": [0, 0],
+    "flow": [0, 0],
+    "presure": [0, 0],
 }
 
 config_versions = [time.time()]
 
 random_data = {
-    "parameters": {"rr": 0, "o2": 0, "peep": 0, "tv": 0,},
+    "parameters": {
+        "rr": 0,
+        "o2": 0,
+        "peep": 0,
+        "tv": 0,
+    },
     "alert_id": 0,
 }
 
 
 async def manageConn(websocket, path):
     CLIENTS.add(websocket)
-    await asyncio.wait(
-        [
-            respondEvents(websocket, path),
-            streamData(websocket, path),
-            pushConfig(websocket, path),
-        ]
-    )
+    await asyncio.wait([
+        respondEvents(websocket, path),
+        streamData(websocket, path),
+        pushConfig(websocket, path),
+    ])
     CLIENTS.remove(websocket)
 
 
@@ -76,8 +79,7 @@ async def sensorGenerator():
     while True:
         for parameter in random_data["parameters"]:
             random_data["parameters"][parameter] = (
-                float(parameters[parameter]) + random.random()
-            )
+                float(parameters[parameter]) + random.random())
         for cli in CLIENTS:
             await pushSensor(cli)
         await asyncio.sleep(SENSOR_FREQ)
@@ -110,7 +112,8 @@ async def pushConfig(websocket, path):
                 for model in models:
                     data = {
                         "t": 2,
-                        "type": model + "_push",
+                        "type": "push",
+                        "model": model,
                         "data": globals()[model],
                         "ts": str(time.time()),
                         "token": "10293848129381038109238019380913",
