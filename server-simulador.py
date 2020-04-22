@@ -7,114 +7,203 @@ import json
 import time
 import math
 import random
+import logging
+
+logging.basicConfig(
+    filename="app.log",
+    level=logging.WARNING,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 SENSOR_FREQ = int(sys.argv[2])
 ALERT_FREQ = int(sys.argv[3])
 
 CLIENTS = set()
 
-p = {
-  "rr":0,
-  "o2":0,
-  "peep":0,
-  "tv":0,
+parameters = {
+    "rr": 0,
+    "o2": 0,
+    "peep": 0,
+    "tv": 0,
 }
-config_ver = [time.time()];
 
-rand_sim = {
-  "p":{
-    "rr":0,
-    "o2":0,
-    "peep":0,
-    "tv":0,
-  },
-  "alertid": 0,
+patient = {
+    "name": "",
+    "medical_history_number": "",
+    "bed_number": "",
+    "atention_number": "",
 }
+
+alerts = {
+    "volume": "",
+    "flow": "",
+    "presure": "",
+}
+
+config_versions = [time.time()]
+
+random_data = {
+    "parameters": {"rr": 0, "o2": 0, "peep": 0, "tv": 0,},
+    "alert_id": 0,
+}
+
 
 async def manageConn(websocket, path):
-  CLIENTS.add(websocket)
-  await asyncio.wait([
-    respondEvents(websocket,path),
-    streamData(websocket,path),
-    pushConfig(websocket,path),
-  ])
-  CLIENTS.remove(websocket)
+    CLIENTS.add(websocket)
+    await asyncio.wait(
+        [
+            respondEvents(websocket, path),
+            streamData(websocket, path),
+            pushConfig(websocket, path),
+        ]
+    )
+    CLIENTS.remove(websocket)
+
 
 async def alertGenerator():
-  while(True):
-    rand_sim['alertid'] += 1
-    for cli in CLIENTS:
-      await pushAlert(cli)
-    await asyncio.sleep(ALERT_FREQ)
+    global random_data
+    while True:
+        random_data["alert_id"] += 1
+        for cli in CLIENTS:
+            await pushAlert(cli)
+        await asyncio.sleep(ALERT_FREQ)
+
 
 async def sensorGenerator():
-  while(True):
-    for k in rand_sim['p']:
-      rand_sim['p'][k] = float(p[k]) + random.random()
-    for cli in CLIENTS:
-      await pushSensor(cli)
-    await asyncio.sleep(SENSOR_FREQ)
+    global parameters
+    global random_data
+    while True:
+        for parameter in random_data["parameters"]:
+            random_data["parameters"][parameter] = (
+                float(parameters[parameter]) + random.random()
+            )
+        for cli in CLIENTS:
+            await pushSensor(cli)
+        await asyncio.sleep(SENSOR_FREQ)
+
 
 async def pushSensor(websocket):
-  try:
-    sdata = '{"t":3,"sensores":'+json.dumps(rand_sim['p'])+',"ts":'+str(time.time())+',"token":"10293848129381038109238019380913"}'
-    await websocket.send(sdata)
-    print("> " + sdata)
-  except:
-    return
+    global random_data
+    try:
+        data = {
+            "t": 3,
+            "type": "sensors_push",
+            "data": random_data["parameters"],
+            "ts": str(time.time()),
+            "token": "10293848129381038109238019380913",
+        }
+        data = json.dumps(data)
+        await websocket.send(data)
+        # print("> " + data)
+    except:
+        return
+
 
 async def pushConfig(websocket, path):
-  ccv = 0
-  while(True):
-    try:
-      if (ccv < config_ver[0]):
-        cfg = '{"t":2,"params":'+json.dumps(p)+',"ts":'+str(time.time())+',"token":"10293848129381038109238019380913"}'
-        await websocket.send(cfg)
-        print("> " + cfg)
-        ccv = config_ver[0]
-      await asyncio.sleep(1)
-    except:
-      break
+    global config_versions
+    checker = 0
+    while True:
+        try:
+            if checker < config_versions[0]:  # todo: ver
+                models = ["parameters", "patient", "alerts"]
+                for model in models:
+                    data = {
+                        "t": 2,
+                        "type": model + "_push",
+                        "data": globals()[model],
+                        "ts": str(time.time()),
+                        "token": "10293848129381038109238019380913",
+                    }
+
+                    await websocket.send(json.dumps(data))
+                # print("> " + data)
+                checker = config_versions[0]
+            await asyncio.sleep(1)
+        except:
+            break
+
 
 async def pushAlert(websocket):
-  try:
-    err = '{"t":1,"msg":"Alerta de prueba '+str(rand_sim['alertid'])+'","severidad":1}'
-    await websocket.send(err)
-    print("> " + err)
-  except:
-    return
+    global random_data
+    try:
+        data = {
+            "t": 1,
+            "type": "alert",
+            "message": "Alerta de prueba " + str(random_data["alert_id"]),
+            "severity": 1,
+        }
+        await websocket.send(json.dumps(data))
+        # print("> " + data)
+    except:
+        return
+
 
 async def streamData(websocket, path):
-  while(True):
-    try:
-      await websocket.send('{"t":0,"d":['+str(20+20*math.sin(time.time()))+','+str(20+20*math.cos(time.time()))+','+str(20+20*math.sin(2*time.time()))+']}')
-      await asyncio.sleep(0.1)
-    except:
-      break
+    while True:
+        try:
+            factor = 20
+            current_time = time.time()
+            data = {
+                "t": 0,
+                "type": "stream",
+                "data": {
+                    "volume": str(factor + factor * math.sin(current_time)),
+                    "presure": str(factor + factor * math.cos(current_time)),
+                    "flow": str(factor + factor * math.sin(2 * current_time)),
+                },
+            }
+
+            result = json.dumps(data)
+            await websocket.send(result)
+            await asyncio.sleep(0.1)
+            # print(f"> {result}")
+        except:
+            break
+
 
 async def respondEvents(websocket, path):
-  while(True):
-    try:
-      name = await websocket.recv()
-      print(f"< {name}")
-      j = json.loads(name)
-      res =''
+    # global parameters
+    global config_versions
+    while True:
+        try:
+            request = await websocket.recv()
+            request = json.loads(request)
+            print(f"< {request}")
+            response = ""
+            model = request["model"]
 
-      if (j['action'] == 'set'):
-        res = '{"id":'+str(j['id'])+',"status":200,"token":"asdf"}'
-        p[j['param']] = j['value']
-        config_ver[0] = time.time()
-        print("new_config= "+str(config_ver[0]))
-      elif (j['action'] == 'get'):
-        res = '{"id":'+str(j['id'])+',"status":300,"value":'+str(p[j['param']])+',"token":"aaaaaasdf"}'
-      else:
-        res = '{"id":'+str(j['id'])+',"status":-1,"token":"asdf"}'
+            if request["action"] == "set":
+                response = {
+                    "id": str(request["id"]),
+                    "status": 200,
+                    "token": "asdf",
+                }
+                globals()[model] = request["data"]
+                config_versions[0] = time.time()
+                print("new_config= " + str(config_versions[0]))
+            elif request["action"] == "get":
+                response = {
+                    "id": str(request["id"]),
+                    "status": 300,
+                    "model": model,
+                    "data": globals()[model],
+                    "token": "aaaaaasdf",
+                }
+            else:
+                response = {
+                    "id": str(request["id"]),
+                    "status": -1,
+                    "token": "asdf",
+                }
 
-      await websocket.send(res)
-      print(f"> {res}")
-    except:
-      print('Connection closed')
-      break
+            response = json.dumps(response)
+            await websocket.send(response)
+            print(f"> {response}")
+        except ZeroDivisionError as err:
+            logger.error(err)
+            print("Connection closed")
+            break
 
 
 start_server = websockets.serve(manageConn, "0.0.0.0", int(sys.argv[1]))
@@ -124,4 +213,3 @@ l = asyncio.get_event_loop()
 l.create_task(alertGenerator())
 l.create_task(sensorGenerator())
 l.run_forever()
-

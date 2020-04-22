@@ -1,0 +1,310 @@
+<!DOCTYPE html PUBLIC"-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>Simulador Yubox</title>
+    <!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha256.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous" />
+    <link rel="stylesheet" href="bootstrap.css" />
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+        }
+        
+        #parameters .form-group {
+            width: 100%;
+        }
+        
+        .nav-item a {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <form>
+                    <div class="form-row align-items-center">
+                        <div class="col-auto">
+                            <label for="ip" class="sr-only">IP</label>
+                            <input id="ip" type="text" class="form-control mb-2" value="127.0.0.1" placeholder="127.0.0.1">
+                        </div>
+                        <div class="col-auto">
+                            <label for="port" class="sr-only">Port</label>
+                            <input id="port" type="text" class="form-control mb-2" value="8090" placeholder="8090">
+                        </div>
+
+                        <div class="col-auto">
+                            <a onclick="connect()" class="btn btn-primary mb-2">Connect</a>
+                        </div>
+                        <div class="col-auto">
+                            <a onclick="disconnect()" class="btn btn-secondary mb-2">Disconnect</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-4" id="graphs">
+                <div class="row">
+                    <div class="col">
+                        <h5>Volumen</h5>
+                        <canvas height="90" id="canvas0"></canvas>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h5>Presión</h5>
+                        <canvas height="90" id="canvas1"></canvas>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h5>Flujo</h5>
+                        <canvas height="90" id="canvas2"></canvas>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-info mb-3">
+                            <div class="card-body">
+                                <p class="card-text">
+                                    <samp id="stream"></samp>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="alert alert-dismissible alert-info">
+                            <h5>PEEP</h5>
+                            <span id="sensor_peep"></span> cmH2O
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="alert alert-dismissible alert-info">
+                            <h5>RR</h5>
+                            <span id="sensor_rr"></span> r/m
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="row">
+                    <div id="message" class="col">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col" id="data"></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <button class="btn btn-primary mb-2" onclick="getRequest('parameters')">Get parameters</button>
+                        <button class="btn btn-primary mb-2" onclick="getRequest('patient')">Get patient</button>
+                        <button class="btn btn-primary mb-2" onclick="getRequest('alerts')">Get alerts</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#parameters_tab">Parameters</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#patient_tab">Patient</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#alerts_tab">Alerts</a>
+                    </li>
+                </ul>
+                <div id="myTabContent2" class="tab-content">
+                    <div class="tab-pane fade active show" id="parameters_tab">
+
+                        <div class="card border-primary mb-3">
+                            <div class="card-header">Parámetros
+                                <div class="text-monospace">(parameters)</div>
+                            </div>
+                            <div class="card-body">
+                                <form id="form-parameters" model="parameters">
+                                    <div class="form-group row">
+                                        <label class="col-sm-4 col-form-label" for="tv">Tidal Volume<br>
+                                    <small class="text-monospace">(tv)</small></label>
+                                        <div class="col-sm-8">
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="tv" name="tv" placeholder="">
+                                                <div class="input-group-append">
+                                                    <div class="input-group-text">l/min</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label class="col-sm-4 col-form-label" for="peep">PEEP<br>
+                                    <small class="text-monospace">(peep)</small></label>
+                                        <div class="col-sm-8">
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="peep" name="peep" placeholder="">
+                                                <div class="input-group-append">
+                                                    <div class="input-group-text">cmH2O</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label class="col-sm-4 col-form-label" for="o2">Porcentaje de oxígeno<br>
+                                    <small class="text-monospace">(o2)</small></label>
+                                        <div class="col-sm-8">
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="o2" name="o2" placeholder="">
+                                                <div class="input-group-append">
+                                                    <div class="input-group-text">%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label class="col-sm-4 col-form-label" for="rr">RR<br>
+                                    <small class="text-monospace">(rr)</small></label>
+                                        <div class="col-sm-8">
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="rr" name="rr" placeholder="">
+                                                <div class="input-group-append">
+                                                    <div class="input-group-text">r/min</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <div class="col">
+                                            <button type="submit" class="btn btn-primary mb-2 btn-block">Set</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="patient_tab">
+
+                        <div class="card border-primary mb-3">
+                            <div class="card-header">Paciente
+                                <div class="text-monospace">(patient)</div>
+                            </div>
+                            <div class="card-body">
+                                <form id="form-patient" model="patient">
+                                    <div class="form-group row">
+                                        <label class="col-sm-6 col-form-label" for="name">
+                                    Nombre<br>
+                                    <small class="text-monospace">(name)</small>
+                                </label>
+                                        <div class="col-sm-6">
+                                            <input type="text" class="form-control" id="name" name="name" placeholder="">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label class="col-sm-6 col-form-label" for="medical_history_number">
+                                    Nº historia clinica<br>
+                                    <small class="text-monospace">(medical_history_number)</small></label>
+                                        <div class="col-sm-6">
+                                            <input type="text" class="form-control" id="medical_history_number" name="medical_history_number" placeholder="">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label class="col-sm-6 col-form-label" for="bed_number">
+                                    Nº de cama<br>
+                                    <small class="text-monospace">(bed_number)</small></label>
+                                        <div class="col-sm-6">
+                                            <input type="text" class="form-control" id="bed_number" name="bed_number" placeholder="">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label class="col-sm-6 col-form-label" for="atention_number">
+                                    Nº de atención<br>
+                                    <small class="text-monospace">(atention_number)</small></label>
+                                        <div class="col-sm-6">
+                                            <input type="text" class="form-control" id="atention_number" name="atention_number" placeholder="">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <div class="col">
+                                            <button type="submit" class="btn btn-primary mb-2 btn-block">Set</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="alerts_tab">
+
+                        <div class="card border-primary mb-3">
+                            <div class="card-header">Alertas
+                                <div class="text-monospace">(alerts)</div>
+                            </div>
+                            <div class="card-body">
+                                <form id="form-alerts" model="alerts">
+                                    <div class="form-group row">
+                                        <label class="col-sm-6 col-form-label" for="volume">
+                                    Volumen<br>
+                                    <small class="text-monospace">(volume)</small></label>
+                                        <div class="col-sm-6">
+                                            <input type="number" class="form-control" id="volume" name="volume" placeholder="">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label class="col-sm-6 col-form-label" for="presure">
+                                    Presión<br>
+                                    <small class="text-monospace">(presure)</small></label>
+                                        <div class="col-sm-6">
+                                            <input type="number" class="form-control" id="presure" name="presure" placeholder="">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label class="col-sm-6 col-form-label" for="flow">
+                                    Flujo<br>
+                                    <small class="text-monospace">(flow)</small></label>
+                                        <div class="col-sm-6">
+                                            <input type="number" class="form-control" id="flow" name="flow" placeholder="">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <div class="col">
+                                            <button type="submit" class="btn btn-primary mb-2 btn-block">Set</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- include jQuery via CDN -->
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- your own file in your project folder -->
+    <script src="script.js"></script>
+</body>
+
+</html>
